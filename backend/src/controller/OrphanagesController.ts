@@ -1,6 +1,7 @@
 import {Request, Response} from 'express';
 import {getRepository} from 'typeorm';
 import orphanageView from '../views/orphanages_view';
+import * as Yup from 'yup';
 
 import Orphange from '../models/Orphanage';
 
@@ -22,11 +23,36 @@ export default{
       const images = requestImages.map(image =>{
         return { path: image.filename}
       })
+    
+      const data ={ 
+        name,
+        latitude,
+        longitude,
+        about, 
+        instructions, 
+        opening_hours, 
+        open_on_weekends, 
+        images
+      }
 
+      const schema = Yup.object().shape({
+        name: Yup.string().required('Nome Obrigatório'),
+        latitude: Yup.number().required('Latitude  Obrigatóra'),
+        longitude: Yup.number().required('Longitude Obrigatória'),
+        about: Yup.string().required('Campo obrigatório, deve ter no máximo 300 caracteres').max(300),
+        instructions: Yup.string().required('Instruções obrigátorias'),
+        opening_hours: Yup.string().required(),
+        open_on_weekends: Yup.boolean().required(),
+        images: Yup.array(Yup.object().shape({
+          path:Yup.string().required()
+        }))
+      })
 
-      const orphanage = orphanagesRepository.create({ 
-        name,latitude, longitude,about, instructions, opening_hours, open_on_weekends, images
+      await schema.validate(data,{
+        abortEarly: false,
       });
+
+      const orphanage = orphanagesRepository.create(data);
   
       await orphanagesRepository.save(orphanage);
       
